@@ -8,6 +8,7 @@ from nltk.corpus import stopwords
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
 
 # Setup
 st.set_page_config(page_title="AI News Checker Assistant", page_icon="🧠")
@@ -17,7 +18,7 @@ stop_words = set(stopwords.words('english'))
 # App Title
 st.title("I'm Veritas. Nice to meet you! 🧠")
 st.caption("I can help you check whether a news passage is real or fake.")
-st.markdown("NEW Testing")
+st.markdown("🧠 Note: According to the WELFake dataset: 0 = Fake, 1 = Real.")
 
 # Session state initialization
 if "messages" not in st.session_state:
@@ -65,9 +66,9 @@ def predict_all_models(content_input):
     results = []
     input_df = prepare_input(content_input)  # Prepare the structured input
 
-    # Feature transformer and model prediction
+    # Adjusted TfidfVectorizer to avoid `max_df` issues with small inputs
     feature_union = ColumnTransformer([
-        ('tfidf', TfidfVectorizer(max_df=0.7, ngram_range=(1, 2), max_features=5000), 'clean_content'),
+        ('tfidf', TfidfVectorizer(ngram_range=(1, 2), max_features=5000), 'clean_content'),
         ('num', MinMaxScaler(), ['text_len', 'punct_count', 'caps_count'])
     ])
 
