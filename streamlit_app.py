@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import re
-import string
 import joblib
 import nltk
 from nltk.corpus import stopwords
@@ -14,6 +13,7 @@ stop_words = set(stopwords.words('english'))
 # App Title
 st.title("I'm Veritas. Nice to meet you! 🧠")
 st.caption("I can help you check whether a news passage is real or fake.")
+st.markdown("🧠 Note: According to the WELFake dataset: 0 = Fake, 1 = Real.")
 
 # Session state initialization
 if "messages" not in st.session_state:
@@ -32,17 +32,12 @@ fine_tuned_models = {
     "XGBoost": joblib.load("fine_tuned_xgboost.pkl")
 }
 
-# Function to clean content
+# Clean content function (example)
 def clean_content(text):
-    # Convert to lowercase
+    # Basic cleaning steps: remove punctuation, convert to lowercase, etc.
     text = text.lower()
-    
-    # Remove punctuation
-    text = re.sub(r'[^\w\s]', '', text)
-    
-    # Remove stopwords
+    text = ''.join([char for char in text if char not in string.punctuation])
     text = ' '.join([word for word in text.split() if word not in stop_words])
-    
     return text
 
 # Predict using all models
@@ -85,31 +80,36 @@ def predict_all_models(content_input):
             model_preds.append((pred, weight))
 
             # Calculate probability (if available)
-            prob = None
+            prob_fake = None
+            prob_real = None
+
             if hasattr(model, 'predict_proba'):
                 proba = model.predict_proba(input_df)
                 if proba.shape[1] == 2:  # Check if the model outputs a probability for two classes (Fake, Real)
-                    prob = float(proba[0][1])  # Probability for the "Real" class (1)
-                    prob = min(max(prob, 0.0), 1.0)  # Clip probability between 0 and 1
-            results.append(f"{name}: Prediction = {'🟥 Fake' if pred == 0 else '🟩 Real'}")
-            if prob is not None:
-                results.append(f"  (Fake Probability = {prob:.2f})")
+                    prob_fake = proba[0][0]  # Probability for Fake (class 0)
+                    prob_real = proba[0][1]  # Probability for Real (class 1)
+                    prob_fake = min(max(prob_fake, 0.0), 1.0)  # Clip probability between 0 and 1
+                    prob_real = min(max(prob_real, 0.0), 1.0)  # Clip probability between 0 and 1
+
+            # Collect results with probabilities
+            if pred == 0:
+                results.append(f"{name}: Prediction = 🟥 Fake (Fake Probability = {prob_fake:.2f})")
+            else:
+                results.append(f"{name}: Prediction = 🟩 Real (Real Probability = {prob_real:.2f})")
 
         except Exception as e:
             results.append(f"{name}: ⚠️ Model failed: {e}")
             model_preds.append((None, 0))
 
-    # Aggregate predictions from all models (weighted voting)
+    # Calculate the weighted ensemble prediction based on model outputs
     weighted_vote_fake = sum(weight for pred, weight in model_preds if pred == 0)
     weighted_vote_real = sum(weight for pred, weight in model_preds if pred == 1)
 
-    # Determine ensemble prediction based on weighted votes
     if weighted_vote_fake > weighted_vote_real:
         results.append(f"\n**Ensemble**: Prediction = 🟥 Fake")
     else:
         results.append(f"\n**Ensemble**: Prediction = 🟩 Real")
 
-    # Return all results as a formatted string
     return "\n".join(results)
 
 # Chat history display
