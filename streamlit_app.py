@@ -25,11 +25,11 @@ if "saved_text" not in st.session_state:
 
 # Load all trained pipelines
 fine_tuned_models = {
-    "Logistic Regression": joblib.load("logistic_regression_model.pkl"),
-    "Naive Bayes": joblib.load("naive_bayes_model.pkl"),
-    "SVM (Linear)": joblib.load("svm_(linear)_model.pkl"),
-    "Random Forest": joblib.load("random_forest_model.pkl"),
-    "XGBoost": joblib.load("xgboost_model.pkl")
+    "Logistic Regression": joblib.load("logistic_regression.pkl"),
+    "Naive Bayes": joblib.load("naive_bayes.pkl"),
+    "SVM (Linear)": joblib.load("svm_(linear).pkl"),
+    "Random Forest": joblib.load("random_forest.pkl"),
+    "XGBoost": joblib.load("xgboost.pkl")
 }
 
 # Predict using all models
