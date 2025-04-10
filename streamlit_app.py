@@ -74,12 +74,21 @@ def predict_all_models(content_input):
             pred = model.predict(X)[0]
             weight = model_weights[name]
             model_preds.append((pred, weight))
-            prob = model.predict_proba(X)[0][1] if hasattr(model, 'predict_proba') else None
-            results.append(f"**{name}**: Prediction = {'🟥 Fake' if pred else '🟩 Real'}")
+            
+            # Fix: safely extract probability
+            prob = None
+            if hasattr(model, 'predict_proba'):
+                proba = model.predict_proba(X)
+                if proba.shape[1] > 1:
+                    prob = proba[0][1]  # probability of class 1 (Fake)
+                else:
+                    prob = proba[0][0]  # fallback
+
+            results.append(f"{name}: Prediction = {'🟥 Fake' if pred else '🟩 Real'}")
             if prob is not None:
-                results.append(f"  (Fake Probability = `{prob:.2f}`)")
+                results.append(f"  (Fake Probability = {prob:.2f})")
         except Exception as e:
-            results.append(f"**{name}**: ⚠️ Model failed to load or predict: {e}")
+            results.append(f"{name}: ⚠️ Model failed to load or predict: {e}")
             model_preds.append((None, 0))  # Append None with no weight for failed models
 
     # Weighted majority vote for ensemble prediction
