@@ -68,7 +68,7 @@ def predict_all_models(content_input):
     }
 
     # Predict with each model and store predictions and weights
-        model_preds = []
+    model_preds = []
         for name, model in fine_tuned_models.items():
             try:
                 pred = model.predict(X)[0]
