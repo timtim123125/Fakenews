@@ -70,7 +70,7 @@ def predict_all_models(content_input):
                 if proba.shape[1] == 2:
                     prob = float(proba[0][1])
                     prob = min(max(prob, 0.0), 1.0)
-            results.append(f"{name}: Prediction = {'🟥 Fake' if pred == 0 else '🟩 Real'}")
+            results.append(f"{name}: Prediction = {'🟥 Fake' if pred == 1 else '🟩 Real'}")
             if prob is not None:
                 results.append(f"  (Fake Probability = {prob:.2f})")
 
@@ -78,8 +78,8 @@ def predict_all_models(content_input):
             results.append(f"{name}: ⚠️ Model failed: {e}")
             model_preds.append((None, 0))
 
-    weighted_vote_fake = sum(weight for pred, weight in model_preds if pred == 0)
-    weighted_vote_real = sum(weight for pred, weight in model_preds if pred == 1)
+    weighted_vote_fake = sum(weight for pred, weight in model_preds if pred == 1)
+    weighted_vote_real = sum(weight for pred, weight in model_preds if pred == 0)
 
     if weighted_vote_fake > weighted_vote_real:
         results.append(f"\n**Ensemble**: Prediction = 🟥 Fake")
