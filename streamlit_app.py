@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import re
+import string
 import joblib
 import nltk
 from nltk.corpus import stopwords
@@ -32,19 +33,10 @@ fine_tuned_models = {
     "XGBoost": joblib.load("fine_tuned_xgboost.pkl")
 }
 
-# Clean content function (example)
-def clean_content(text):
-    # Basic cleaning steps: remove punctuation, convert to lowercase, etc.
-    text = text.lower()
-    text = ''.join([char for char in text if char not in string.punctuation])
-    text = ' '.join([word for word in text.split() if word not in stop_words])
-    return text
-
 # Predict using all models
 def predict_all_models(content_input):
     results = []
 
-    # Define weights for the models
     model_weights = {
         "Logistic Regression": 3,
         "Naive Bayes": 1,
@@ -55,53 +47,37 @@ def predict_all_models(content_input):
 
     model_preds = []
 
-    # Clean the content before further processing
-    cleaned_content = clean_content(content_input)
-
-    # Prepare input features (directly from cleaned_content)
-    text_len = len(cleaned_content.split())
-    punct_count = len(re.findall(r'[!?]', cleaned_content))
-    caps_count = sum(1 for word in cleaned_content.split() if word.isupper() and len(word) > 1)
-
-    # Create a DataFrame with cleaned content and features
-    input_df = pd.DataFrame([{
-        'clean_content': cleaned_content,  # Directly using the cleaned content
-        'text_len': text_len,
-        'punct_count': punct_count,
-        'caps_count': caps_count
-    }])
-
-    # Loop through all models to make predictions
     for name, model in fine_tuned_models.items():
         try:
-            # Predict with the model
+            # Match the structure used during training
+            input_df = pd.DataFrame([{
+                'title': '',
+                'text': content_input,
+                'content': content_input,
+                'clean_content': content_input,
+                'text_len': len(content_input.split()),
+                'punct_count': len(re.findall(r'[!?]', content_input)),
+                'caps_count': sum(1 for w in content_input.split() if w.isupper() and len(w) > 1)
+            }])
+
             pred = model.predict(input_df)[0]
             weight = model_weights[name]
             model_preds.append((pred, weight))
 
-            # Calculate probability (if available)
-            prob_fake = None
-            prob_real = None
-
+            prob = None
             if hasattr(model, 'predict_proba'):
                 proba = model.predict_proba(input_df)
-                if proba.shape[1] == 2:  # Check if the model outputs a probability for two classes (Fake, Real)
-                    prob_fake = proba[0][0]  # Probability for Fake (class 0)
-                    prob_real = proba[0][1]  # Probability for Real (class 1)
-                    prob_fake = min(max(prob_fake, 0.0), 1.0)  # Clip probability between 0 and 1
-                    prob_real = min(max(prob_real, 0.0), 1.0)  # Clip probability between 0 and 1
-
-            # Collect results with probabilities
-            if pred == 0:
-                results.append(f"{name}: Prediction = 🟥 Fake (Fake Probability = {prob_fake:.2f})")
-            else:
-                results.append(f"{name}: Prediction = 🟩 Real (Real Probability = {prob_real:.2f})")
+                if proba.shape[1] == 2:
+                    prob = float(proba[0][1])
+                    prob = min(max(prob, 0.0), 1.0)
+            results.append(f"{name}: Prediction = {'🟥 Fake' if pred == 0 else '🟩 Real'}")
+            if prob is not None:
+                results.append(f"  (Fake Probability = {prob:.2f})")
 
         except Exception as e:
             results.append(f"{name}: ⚠️ Model failed: {e}")
             model_preds.append((None, 0))
 
-    # Calculate the weighted ensemble prediction based on model outputs
     weighted_vote_fake = sum(weight for pred, weight in model_preds if pred == 0)
     weighted_vote_real = sum(weight for pred, weight in model_preds if pred == 1)
 
