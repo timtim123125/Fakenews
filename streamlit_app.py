@@ -13,6 +13,7 @@ stop_words = set(stopwords.words('english'))
 # App Title
 st.title("I'm Veritas. Nice to meet you! 🧠")
 st.caption("I can help you check whether a news passage is real or fake.")
+st.markdown("🧠 Note: According to the WELFake dataset: 0 = Fake, 1 = Real.")
 
 # Session state initialization
 if "messages" not in st.session_state:
@@ -57,17 +58,11 @@ def predict_all_models(content_input):
     # Clean the content before further processing
     cleaned_content = clean_content(content_input)
 
-    # Prepare input features (directly from cleaned_content)
-    text_len = len(cleaned_content.split())
-    punct_count = len(re.findall(r'[!?]', cleaned_content))
-    caps_count = sum(1 for word in cleaned_content.split() if word.isupper() and len(word) > 1)
-
     # Create a DataFrame with cleaned content and features
     input_df = pd.DataFrame([{
-        'clean_content': cleaned_content,  # Directly using the cleaned content
-        'text_len': text_len,
-        'punct_count': punct_count,
-        'caps_count': caps_count
+        'text_len': len(cleaned_content.split()),
+        'punct_count': len(re.findall(r'[!?]', cleaned_content)),
+        'caps_count': sum(1 for w in cleaned_content.split() if w.isupper() and len(w) > 1)
     }])
 
     # Loop through all models to make predictions
