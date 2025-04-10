@@ -69,26 +69,26 @@ def predict_all_models(content_input):
 
     # Predict with each model and store predictions and weights
     model_preds = []
-        for name, model in fine_tuned_models.items():
-            try:
-                pred = model.predict(X)[0]
-                weight = model_weights[name]
-                model_preds.append((pred, weight))
-    
-                # Fix: Safe probability extraction
-                prob = None
-                if hasattr(model, 'predict_proba'):
-                    proba = model.predict_proba(X)
-                    try:
-                        if proba.shape[1] == 2:
-                            prob = float(proba[0][1])
-                        else:
-                            prob = float(proba[0][0])
-                        # Clamp to [0, 1]
-                        if prob < 0 or prob > 1:
-                            prob = min(max(prob, 0.0), 1.0)
-                    except:
-                        prob = None
+    for name, model in fine_tuned_models.items():
+        try:
+            pred = model.predict(X)[0]
+            weight = model_weights[name]
+            model_preds.append((pred, weight))
+
+            # Fix: Safe probability extraction
+            prob = None
+            if hasattr(model, 'predict_proba'):
+                proba = model.predict_proba(X)
+                try:
+                    if proba.shape[1] == 2:
+                        prob = float(proba[0][1])
+                    else:
+                        prob = float(proba[0][0])
+                    # Clamp to [0, 1]
+                    if prob < 0 or prob > 1:
+                        prob = min(max(prob, 0.0), 1.0)
+                except:
+                    prob = None
                     
             results.append(f"{name}: Prediction = {'🟥 Fake' if pred else '🟩 Real'}")
             if prob is not None:
