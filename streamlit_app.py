@@ -27,7 +27,7 @@ if "saved_text" not in st.session_state:
 fine_tuned_models = {
     "Logistic Regression": joblib.load("logistic_regression.pkl"),
     "Naive Bayes": joblib.load("naive_bayes.pkl"),
-    "SVM (Linear)": joblib.load("svm_(linear).pkl"),
+    "SVM (Linear)": joblib.load("svm_linear.pkl"),
     "Random Forest": joblib.load("random_forest.pkl"),
     "XGBoost": joblib.load("xgboost.pkl")
 }
