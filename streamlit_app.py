@@ -3,7 +3,11 @@ import joblib
 import nltk
 import re
 import string
+import pandas as pd
 from nltk.corpus import stopwords
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.compose import ColumnTransformer
 
 # Setup
 st.set_page_config(page_title="AI News Checker Assistant", page_icon="🧠")
@@ -13,7 +17,7 @@ stop_words = set(stopwords.words('english'))
 # App Title
 st.title("I'm Veritas. Nice to meet you! 🧠")
 st.caption("I can help you check whether a news passage is real or fake.")
-st.markdown("🧠 Note: According to the WELFake dataset: 0 = Fake, 1 = Real.")
+st.markdown("NEW Testing")
 
 # Session state initialization
 if "messages" not in st.session_state:
@@ -37,22 +41,47 @@ def clean_text(text):
     text = text.lower()
     text = re.sub(r'\d+', '', text)  # remove digits
     text = text.translate(str.maketrans('', '', string.punctuation))  # remove punctuation
-    text = re.sub(r'\s+', ' ', text).strip()  # remove extra spaces
+    text = re.sub(r'\s+', ' ', text).strip()  # normalize whitespace
     return text
+
+# Prepare input function: cleans text and prepares features
+def prepare_input(content_input):
+    cleaned_text = clean_text(content_input)
+    
+    # Extract additional features (length, punctuation count, capital letter count)
+    features = {
+        'clean_content': cleaned_text,
+        'text_len': len(cleaned_text.split()),
+        'punct_count': len(re.findall(r'[!?]', cleaned_text)),
+        'caps_count': sum(1 for w in cleaned_text.split() if w.isupper() and len(w) > 1)
+    }
+
+    # Create a DataFrame (with the required structure)
+    input_df = pd.DataFrame([features])
+    return input_df
 
 # Prediction function
 def predict_all_models(content_input):
     results = []
-    cleaned_text = clean_text(content_input)
+    input_df = prepare_input(content_input)  # Prepare the structured input
+
+    # Feature transformer and model prediction
+    feature_union = ColumnTransformer([
+        ('tfidf', TfidfVectorizer(max_df=0.7, ngram_range=(1, 2), max_features=5000), 'clean_content'),
+        ('num', MinMaxScaler(), ['text_len', 'punct_count', 'caps_count'])
+    ])
 
     for name, model in fine_tuned_models.items():
         try:
-            pred = model.predict([cleaned_text])[0]
+            # Apply the ColumnTransformer to the input (this includes TF-IDF + scaling)
+            transformed_input = feature_union.fit_transform(input_df)
 
+            # Predict using the model
+            pred = model.predict(transformed_input)[0]
             result_line = f"**{name}**: Prediction = {'🟥 Fake' if pred == 0 else '🟩 Real'}"
 
             if hasattr(model, 'predict_proba'):
-                proba = model.predict_proba([cleaned_text])
+                proba = model.predict_proba(transformed_input)
                 if proba.shape[1] == 2:
                     fake_prob = proba[0][0]  # Probability of class 0 (Fake)
                     result_line += f"  (Fake Probability = {fake_prob:.2f})"
