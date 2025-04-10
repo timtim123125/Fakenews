@@ -13,7 +13,6 @@ stop_words = set(stopwords.words('english'))
 # App Title
 st.title("I'm Veritas. Nice to meet you! 🧠")
 st.caption("I can help you check whether a news passage is real or fake.")
-st.markdown("🧠 Note: According to the WELFake dataset: 0 = Fake, 1 = Real.")
 
 # Session state initialization
 if "messages" not in st.session_state:
