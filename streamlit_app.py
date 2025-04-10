@@ -62,6 +62,7 @@ def predict_all_models(content_input):
 
     # Create a DataFrame with cleaned content and features
     input_df = pd.DataFrame([{
+        'clean_content': cleaned_content,
         'text_len': len(cleaned_content.split()),
         'punct_count': len(re.findall(r'[!?]', cleaned_content)),
         'caps_count': sum(1 for w in cleaned_content.split() if w.isupper() and len(w) > 1)
