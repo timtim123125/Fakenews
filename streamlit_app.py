@@ -1,6 +1,8 @@
 import streamlit as st
 import joblib
 import nltk
+import re
+import string
 from nltk.corpus import stopwords
 
 # Setup
@@ -11,6 +13,7 @@ stop_words = set(stopwords.words('english'))
 # App Title
 st.title("I'm Veritas. Nice to meet you! 🧠")
 st.caption("I can help you check whether a news passage is real or fake.")
+st.markdown("🧠 Note: According to the WELFake dataset: 0 = Fake, 1 = Real.")
 
 # Session state initialization
 if "messages" not in st.session_state:
@@ -29,19 +32,29 @@ fine_tuned_models = {
     "XGBoost": joblib.load("fine_tuned_xgboost.pkl")
 }
 
-# Predict using all models with raw text input
+# Text cleaning function
+def clean_text(text):
+    text = text.lower()
+    text = re.sub(r'\d+', '', text)  # remove digits
+    text = text.translate(str.maketrans('', '', string.punctuation))  # remove punctuation
+    text = re.sub(r'\s+', ' ', text).strip()  # remove extra spaces
+    return text
+
+# Prediction function
 def predict_all_models(content_input):
     results = []
+    cleaned_text = clean_text(content_input)
 
     for name, model in fine_tuned_models.items():
         try:
-            pred = model.predict([content_input])[0]
+            pred = model.predict([cleaned_text])[0]
+
             result_line = f"**{name}**: Prediction = {'🟥 Fake' if pred == 0 else '🟩 Real'}"
 
             if hasattr(model, 'predict_proba'):
-                proba = model.predict_proba([content_input])
+                proba = model.predict_proba([cleaned_text])
                 if proba.shape[1] == 2:
-                    fake_prob = proba[0][0]
+                    fake_prob = proba[0][0]  # Probability of class 0 (Fake)
                     result_line += f"  (Fake Probability = {fake_prob:.2f})"
 
             results.append(result_line)
