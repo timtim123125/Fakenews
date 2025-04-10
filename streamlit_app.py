@@ -79,11 +79,18 @@ def predict_all_models(content_input):
             prob = None
             if hasattr(model, 'predict_proba'):
                 proba = model.predict_proba(X)
-                if proba.shape[1] > 1:
-                    prob = proba[0][1]  # probability of class 1 (Fake)
-                else:
-                    prob = proba[0][0]  # fallback
-
+                try:
+                    # Ensure it's a 2-class classifier
+                    if proba.shape[1] == 2:
+                        prob = float(proba[0][1])
+                    else:
+                        prob = float(proba[0][0])  # fallback
+                    # Clamp probability to [0, 1]
+                    if prob < 0 or prob > 1:
+                        prob = min(max(prob, 0.0), 1.0)
+                    except Exception as e:
+                        prob = None
+    
             results.append(f"{name}: Prediction = {'🟥 Fake' if pred else '🟩 Real'}")
             if prob is not None:
                 results.append(f"  (Fake Probability = {prob:.2f})")
