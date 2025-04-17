@@ -152,7 +152,16 @@ if input_type == "Phishing Email":
             # Step 2: Run inference for additional results
             if EnsemblePrediction == 0:
                 run_infer_prediction(title_input + ">>>" + content_input)
+                # Include the chart in the assistant's message
+                st.session_state.messages.append({
+                    "role": "assistant",
+                    "content": "Here are the inference results:",
+                })
                 # Display the chart from session state
+                st.session_state.messages.append({
+                    "role": "assistant",
+                    "content": "",
+                })
                 st.pyplot(st.session_state.chart)
 
             st.session_state.form_submitted = False
