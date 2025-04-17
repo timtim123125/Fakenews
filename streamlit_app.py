@@ -121,8 +121,8 @@ def run_infer_prediction(content_input):
     ax[1].set_ylabel('Probability')
     ax[1].tick_params(axis='x', rotation=45)  # Rotate x-axis labels if they are long
 
-    # Display the charts using Streamlit
-    st.pyplot(fig)
+    # Store the figure in session state so it persists across reruns
+    st.session_state.chart = fig
 
 # Display chat history
 for message in st.session_state.messages:
@@ -151,11 +151,10 @@ if input_type == "Phishing Email":
 
             # Step 2: Run inference for additional results
             if EnsemblePrediction == 0:
-                infer_result_string = run_infer_prediction(title_input + ">>>" + content_input)
-                st.session_state.messages.append({
-                    "role": "assistant",
-                    "content": f"Additional Inference Results:\n{infer_result_string}"
-                })
+                run_infer_prediction(title_input + ">>>" + content_input)
+                # Display the chart from session state
+                st.pyplot(st.session_state.chart)
+
             st.session_state.form_submitted = False
             st.rerun()
 
