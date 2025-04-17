@@ -123,14 +123,10 @@ def run_infer_prediction(content_input):
     # Store the figure in session state so it persists across reruns
     st.session_state.chart = fig
 
-# Create two columns for chatbot and chart
-col1, col2 = st.columns([2, 2])  # Adjust the proportions if needed
-
-# Display chat history in column 1 (chatbot)
-with col1:
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.write(message["content"])
+# Display chat history
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.write(message["content"])
 
 # Chat input for phishing email (separate title and content)
 if input_type == "Phishing Email":
@@ -160,9 +156,8 @@ if input_type == "Phishing Email":
                     "content": "Here are the inference results:",                    
                 })
 
-                with col2:
-                    # Display the chart in the second column (right column)
-                    st.pyplot(st.session_state.chart)
+                # Display the chart (directly)
+                st.pyplot(st.session_state.chart)
 
             st.session_state.form_submitted = False
 
