@@ -162,7 +162,7 @@ if input_type == "Phishing Email":
                 st.pyplot(st.session_state.chart)  # This will render the chart below the assistant's response
 
             st.session_state.form_submitted = False
-            st.rerun()
+            #st.rerun()
 
 else:
     # Handle News Article input (using form and rerun)
