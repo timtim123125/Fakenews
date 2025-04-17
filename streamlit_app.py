@@ -156,13 +156,15 @@ if input_type == "Phishing Email":
                 st.session_state.messages.append({
                     "role": "assistant",
                     "content": "Here are the inference results:",
+                    
                 })
 
                 # Display the chart after the response
-                st.pyplot(st.session_state.chart)  # This will render the chart below the assistant's response
+                
 
             st.session_state.form_submitted = False
-            #st.rerun()
+            st.rerun()
+            st.pyplot(st.session_state.chart)  
 
 else:
     # Handle News Article input (using form and rerun)
