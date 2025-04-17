@@ -5,113 +5,108 @@ import string
 import joblib
 import nltk
 from nltk.corpus import stopwords
+from collections import Counter
+from infer import run_inference  # Import the function from infer.py
 
 # Setup
-st.set_page_config(page_title="AI News Checker Assistant", page_icon="🧠")
+st.set_page_config(page_title="Veritas - AI News & Email Checker", page_icon="🧠")
 nltk.download('stopwords')
 stop_words = set(stopwords.words('english'))
 
-# App Title
+# Title
 st.title("I'm Veritas. Nice to meet you! 🧠")
-st.caption("I can help you check whether a news passage or an email is real or fake/phising")
+st.caption("I can help you check whether a **news passage** or **email** is real or fake/phishing.")
 
-# Session state initialization
+# Sidebar: Input Type Switcher
+input_type = st.sidebar.selectbox("🗂️ Choose the input type:", ["News Article", "Phishing Email"])
+expected_fake_label = 0 if input_type == "News Article" else 1  # Invert logic if it's Enron (where 1 = Fake)
+
+# Session State Init
 if "messages" not in st.session_state:
-    st.session_state.messages = [{"role": "assistant", "content": "Please enter a piece of text you'd like me to analyze for fake news."}]
+    st.session_state.messages = [{"role": "assistant", "content": "Please enter a text you'd like me to check."}]
 if "awaiting_text" not in st.session_state:
     st.session_state.awaiting_text = True
-if "saved_text" not in st.session_state:
-    st.session_state.saved_text = ""
-    
-# Clean content function (example)
-def clean_content(text):
-    # Basic cleaning steps: remove punctuation, convert to lowercase, etc.
-    text = text.lower()
-    text = ''.join([char for char in text if char not in string.punctuation])
-    text = ' '.join([word for word in text.split() if word not in stop_words])
-    return text
+if "form_submitted" not in st.session_state:
+    st.session_state.form_submitted = False
 
-# Load all trained pipelines
-fine_tuned_models = {
-    "Logistic Regression": joblib.load("fine_tuned_logistic_regression.pkl"),
-    "Naive Bayes": joblib.load("fine_tuned_naive_bayes.pkl"),
-    "SVM (Linear)": joblib.load("fine_tuned_svm_(linear).pkl"),
-    "Random Forest": joblib.load("fine_tuned_random_forest.pkl"),
-    "XGBoost": joblib.load("fine_tuned_xgboost.pkl")
+# Load Models (if still needed for other purposes)
+model_files = {
+    "Logistic Regression": "fine_tuned_logistic_regression.pkl",
+    "Naive Bayes": "fine_tuned_naive_bayes.pkl",
+    "SVM (Linear)": "fine_tuned_svm_(linear).pkl",
+    "Random Forest": "fine_tuned_random_forest.pkl",
+    "XGBoost": "fine_tuned_xgboost.pkl"
 }
+fine_tuned_models = {name: joblib.load(path) for name, path in model_files.items()}
 
-# Predict using all models
-def predict_all_models(content_input):
-    results = []
+# Prediction Function (Using infer.py)
+def run_infer_prediction(text):
+    # Specify the model path for ONNX model (replace with actual model path)
+    model_path = "Deeplearning with Reflect/assets/qmodel.onnx"
+    
+    # Call the inference function from infer.py
+    type_pred, queue_pred, type_probs, queue_probs = run_inference(text, model_path)
+    
+    # Return the results formatted
+    result_string = f"Type Prediction: {type_pred}\nQueue Prediction: {queue_pred}\n"
+    
+    result_string += "\nType Probabilities:\n"
+    for item in type_probs:
+        result_string += f"{item['name']}: {item['prob']}\n"
+        
+    result_string += "\nQueue Probabilities:\n"
+    for item in queue_probs:
+        result_string += f"{item['name']}: {item['prob']}\n"
+        
+    return result_string
 
-    model_weights = {
-        "Logistic Regression": 3,
-        "Naive Bayes": 1,
-        "SVM (Linear)": 2,
-        "Random Forest": 1,
-        "XGBoost": 3
-    }
-
-    model_preds = []
-
-    for name, model in fine_tuned_models.items():
-        try:
-            # Match the structure used during training
-            input_df = pd.DataFrame([{
-                'clean_content': clean_content(content_input),
-                'text_len': len(content_input.split()),
-                'punct_count': len(re.findall(r'[!?]', content_input)),
-                'caps_count': sum(1 for w in content_input.split() if w.isupper() and len(w) > 1)
-            }])
-
-            pred = model.predict(input_df)[0]
-            weight = model_weights[name]
-            model_preds.append((pred, weight))
-
-            prob = None
-            if hasattr(model, 'predict_proba'):
-                proba = model.predict_proba(input_df)
-                if proba.shape[1] == 2:
-                    prob = float(proba[0][1])
-                    prob = min(max(prob, 0.0), 1.0)
-            results.append(f"{name}: Prediction = {'🟥 Fake' if pred == 1 else '🟩 Real'}")
-            if prob is not None:
-                results.append(f"  (Fake Probability = {prob:.2f})")
-
-        except Exception as e:
-            results.append(f"{name}: ⚠️ Model failed: {e}")
-            model_preds.append((None, 0))
-
-    weighted_vote_fake = sum(weight for pred, weight in model_preds if pred == 1)
-    weighted_vote_real = sum(weight for pred, weight in model_preds if pred == 0)
-
-    if weighted_vote_fake > weighted_vote_real:
-        results.append(f"\n**Ensemble**: Prediction = 🟥 Fake")
-    else:
-        results.append(f"\n**Ensemble**: Prediction = 🟩 Real")
-
-    return "\n".join(results)
-
-# Chat history display
+# Display chat history
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.write(message["content"])
 
-# User input
-if user_input := st.chat_input("Please enter your message"):
-    st.session_state.messages.append({"role": "user", "content": user_input})
+# Chat input for phishing email (separate title and content)
+if input_type == "Phishing Email":
+    with st.form(key='email_form'):
+        title_input = st.text_input("📧 Enter the title of the phishing email:")
+        content_input = st.text_area("📝 Enter the content of the phishing email:")
 
-    if st.session_state.awaiting_text:
-        st.session_state.saved_text = user_input
-        st.session_state.awaiting_text = False
+        submit_button = st.form_submit_button("Check Email")
 
-        result_string = predict_all_models(user_input)
+        if submit_button:
+            st.session_state.form_submitted = True
+            st.session_state.messages.append({"role": "user", "content": f"Title: {title_input}\n\nContent: {content_input}"})
 
-        st.session_state.messages.append({
-            "role": "assistant",
-            "content": f"✅ Text received.\n\n{result_string}"
-        })
+        if st.session_state.form_submitted and title_input and content_input:
+            # Prediction logic using the inference function
+            result_string = run_infer_prediction(content_input)
+            st.session_state.messages.append({
+                "role": "assistant",
+                "content": f"✅ Email received and classified for **Phishing Email**.\n\n**Title**: {title_input}\n\n{result_string}"
+            })
+            st.session_state.form_submitted = False
+            st.rerun()
 
-        st.session_state.awaiting_text = True
+else:
+    # Handle News Article input (using form and rerun)
+    with st.form(key='news_form'):
+        user_input = st.text_area("📄 Enter the news article content:")
 
-    st.rerun()
+        submit_button = st.form_submit_button("Check News Article")
+
+        if submit_button:
+            st.session_state.form_submitted = True
+            st.session_state.messages.append({"role": "user", "content": user_input})
+
+            # Trigger rerun to update the page
+            st.rerun()
+
+        if st.session_state.form_submitted and user_input:
+            # Prediction logic using the inference function
+            result_string = run_infer_prediction(user_input)
+            st.session_state.messages.append({
+                "role": "assistant",
+                "content": f"✅ News Article received and classified for **News Article**.\n\n{result_string}"
+            })
+            st.session_state.form_submitted = False
+            st.rerun()
