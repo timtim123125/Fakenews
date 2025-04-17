@@ -173,13 +173,20 @@ else:
             })
             st.session_state.form_submitted = False
             st.rerun()
-# Display messages + chart if applicable
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.write(message["content"])
+            
+# Only show the last user + assistant message
+if len(st.session_state.messages) >= 2:
+    last_user_msg = st.session_state.messages[-2]
+    last_assistant_msg = st.session_state.messages[-1]
 
-        # Show chart immediately after the assistant's response
-        if message["role"] == "assistant" and "inference results" in message["content"].lower():
+    with st.chat_message(last_user_msg["role"]):
+        st.write(last_user_msg["content"])
+
+    with st.chat_message(last_assistant_msg["role"]):
+        st.write(last_assistant_msg["content"])
+
+        # Show chart immediately after assistant response
+        if "inference results" in last_assistant_msg["content"].lower():
             if st.session_state.get("chart_image"):
                 st.image(st.session_state.chart_image, use_column_width=True)
 
