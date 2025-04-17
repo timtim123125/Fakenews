@@ -29,6 +29,8 @@ if "awaiting_text" not in st.session_state:
     st.session_state.awaiting_text = True
 if "form_submitted" not in st.session_state:
     st.session_state.form_submitted = False
+if "chart" not in st.session_state:
+    st.session_state.chart = None  # Initialize the chart session state
 
 # Load Models (if still needed for other purposes)
 model_files = {
@@ -103,8 +105,8 @@ def run_infer_prediction(content_input):
         st.error("Error: The probabilities data is missing or invalid.")
         return
 
-    # Generate a bar chart for the probabilities of types and queues
-    fig, ax = plt.subplots(1, 2, figsize=(12, 5))
+    # Generate a larger bar chart for the probabilities of types and queues
+    fig, ax = plt.subplots(1, 2, figsize=(18, 10))  # Increased figsize for larger chart
 
     # Plot for Type Probabilities
     ax[0].bar([item['name'] for item in type_probs], [item['prob'] for item in type_probs])
@@ -164,7 +166,6 @@ if input_type == "Phishing Email":
                     st.pyplot(st.session_state.chart)
 
             st.session_state.form_submitted = False
-            #st.rerun()
 
 else:
     # Handle News Article input (using form and rerun)
@@ -177,9 +178,6 @@ else:
             st.session_state.form_submitted = True
             st.session_state.messages.append({"role": "user", "content": user_input})
 
-            # Trigger rerun to update the page
-            st.rerun()
-
         if st.session_state.form_submitted and user_input:
             result_string, fake_or_real_prediction = predict_fake_or_real(user_input)
             st.session_state.messages.append({
@@ -187,4 +185,4 @@ else:
                 "content": f"✅ News Article received and classified for **News Article**.\n\n{result_string}"
             })
             st.session_state.form_submitted = False
-            st.rerun()
+            st.rerun()  # You may still use rerun here if needed but avoid it in the email case
