@@ -164,7 +164,7 @@ if input_type == "Phishing Email":
                 st.image(st.session_state.chart_image, use_column_width=True)
 
             st.session_state.form_submitted = False
-
+            st.rerun()
 else:
     # Handle News Article input (using form and rerun)
     with st.form(key='news_form'):
