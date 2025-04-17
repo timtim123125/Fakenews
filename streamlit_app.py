@@ -8,6 +8,7 @@ from nltk.corpus import stopwords
 from collections import Counter
 from infer import run_inference  # Import the function from infer.py
 import matplotlib.pyplot as plt
+import io  # For handling image as byte stream
 
 # Setup
 st.set_page_config(page_title="Veritas - AI News & Email Checker", page_icon="🧠")
@@ -29,8 +30,8 @@ if "awaiting_text" not in st.session_state:
     st.session_state.awaiting_text = True
 if "form_submitted" not in st.session_state:
     st.session_state.form_submitted = False
-if "chart" not in st.session_state:
-    st.session_state.chart = None  # Initialize chart in session state to keep track of it
+if "chart_image" not in st.session_state:
+    st.session_state.chart_image = None  # Initialize chart image in session state to keep track of it
 
 # Load Models (if still needed for other purposes)
 model_files = {
@@ -92,7 +93,7 @@ def predict_fake_or_real(content_input):
     results.append(f"\n**Ensemble**: Prediction = {final_prediction}")
     return "\n".join(results), final_prediction
 
-# Run the inference with charts
+# Run the inference with charts and save the chart as an image
 def run_infer_prediction(content_input):
     # Specify the model path for ONNX model (replace with actual model path)
     model_path = "qmodel.onnx"
@@ -120,8 +121,11 @@ def run_infer_prediction(content_input):
     ax[1].set_ylabel('Probability')
     ax[1].tick_params(axis='x', rotation=45)  # Rotate x-axis labels if they are long
 
-    # Store the figure in session state so it persists across reruns
-    st.session_state.chart = fig
+    # Save the figure to a bytes buffer and store it in session state
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png")
+    buf.seek(0)
+    st.session_state.chart_image = buf
 
 # Display chat history
 for message in st.session_state.messages:
@@ -150,17 +154,16 @@ if input_type == "Phishing Email":
             # Step 2: Run inference for additional results
             if EnsemblePrediction == 0:
                 run_infer_prediction(title_input + ">>>" + content_input)
-                # Include the chart in the assistant's message
+                # Include the chart image in the assistant's message
                 st.session_state.messages.append({
                     "role": "assistant",
-                    "content": "Here are the inference results:",                    
+                    "content": "Here are the inference results:"
                 })
 
-                # Display the chart (directly)
-                st.pyplot(st.session_state.chart)
+                # Display the image (directly from session state)
+                st.image(st.session_state.chart_image, use_column_width=True)
 
             st.session_state.form_submitted = False
-            st.rerun()
 
 else:
     # Handle News Article input (using form and rerun)
@@ -183,4 +186,3 @@ else:
                 "content": f"✅ News Article received and classified for **News Article**.\n\n{result_string}"
             })
             st.session_state.form_submitted = False
-            st.rerun()
