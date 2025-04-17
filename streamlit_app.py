@@ -39,6 +39,7 @@ model_files = {
     "XGBoost": "fine_tuned_xgboost.pkl"
 }
 fine_tuned_models = {name: joblib.load(path) for name, path in model_files.items()}
+EnsemblePrediction = 0
 
 # Extract features for prediction
 def extract_features(text):
@@ -85,8 +86,8 @@ def predict_fake_or_real(content_input):
     # Ensemble vote for final prediction
     majority_vote = Counter(weighted_votes).most_common(1)[0][0]
     final_prediction = '🟥 Fake' if majority_vote == 0 else '🟩 Real'
+    EnsemblePrediction = 0 if majority_vote == 0 else 1
     results.append(f"\n**Ensemble**: Prediction = {final_prediction}")
-    
     return "\n".join(results), final_prediction
 
 # Run the inference with charts
@@ -144,15 +145,15 @@ if input_type == "Phishing Email":
 
         if st.session_state.form_submitted and title_input and content_input:
             # Step 1: Use fine-tuned models to predict if it's fake or real
-            result_string, fake_or_real_prediction = predict_fake_or_real(content_input)
+            result_string, fake_or_real_prediction = predict_fake_or_real(title_input + content_input)
             st.session_state.messages.append({
                 "role": "assistant",
                 "content": f"✅ Email received and classified for **Phishing Email**.\n\n**Title**: {title_input}\n\n{result_string}"
             })
 
             # Step 2: Run inference for additional results
-            if final_prediction == "🟥 Fake":
-                infer_result_string = run_infer_prediction(content_input)
+            if EnsemblePrediction == 0:
+                infer_result_string = run_infer_prediction(title_input + ">>>" + content_input)
                 st.session_state.messages.append({
                     "role": "assistant",
                     "content": f"Additional Inference Results:\n{infer_result_string}"
@@ -175,18 +176,10 @@ else:
             st.rerun()
 
         if st.session_state.form_submitted and user_input:
-            # Step 1: Use fine-tuned models to predict if it's fake or real
             result_string, fake_or_real_prediction = predict_fake_or_real(user_input)
             st.session_state.messages.append({
                 "role": "assistant",
                 "content": f"✅ News Article received and classified for **News Article**.\n\n{result_string}"
-            })
-
-            # Step 2: Run inference for additional results
-            infer_result_string = run_infer_prediction(user_input)
-            st.session_state.messages.append({
-                "role": "assistant",
-                "content": f"Additional Inference Results:\n{infer_result_string}"
             })
             st.session_state.form_submitted = False
             st.rerun()
