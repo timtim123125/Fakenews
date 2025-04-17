@@ -7,6 +7,7 @@ import nltk
 from nltk.corpus import stopwords
 from collections import Counter
 from infer import run_inference  # Import the function from infer.py
+import matplotlib.pyplot as plt
 
 # Setup
 st.set_page_config(page_title="Veritas - AI News & Email Checker", page_icon="🧠")
@@ -39,14 +40,78 @@ model_files = {
 }
 fine_tuned_models = {name: joblib.load(path) for name, path in model_files.items()}
 
-# Prediction Function (Using infer.py)
-def run_infer_prediction(text):
+# Extract features for prediction
+def extract_features(text):
+    return pd.DataFrame([{
+        'clean_content': text,
+        'text_len': len(text.split()),
+        'punct_count': len(re.findall(r'[!?]', text)),
+        'caps_count': sum(1 for w in text.split() if w.isupper() and len(w) > 1)
+    }])
+
+# Prediction Function (Using the fine-tuned models)
+def predict_fake_or_real(content_input):
+    input_df = extract_features(content_input)
+    results = []
+    weighted_votes = []
+
+    model_weights = {
+        "Logistic Regression": 2,
+        "Naive Bayes": 1,
+        "SVM (Linear)": 2,
+        "Random Forest": 1,
+        "XGBoost": 3
+    }
+
+    for name, model in fine_tuned_models.items():
+        try:
+            pred = model.predict(input_df)[0]
+            pred_adjusted = pred if expected_fake_label == 0 else 1 - pred
+            weighted_votes.extend([pred_adjusted] * model_weights[name])
+
+            prob = None
+            if hasattr(model.named_steps['clf'], 'predict_proba'):
+                prob = model.predict_proba(input_df)[0][1]
+                prob = min(max(prob, 0.0), 1.0)
+            if input_type == "News Article":
+                results.append(f"**{name}**: Prediction = {'🟥 Fake' if pred_adjusted == 0 else '🟩 Real'}" +
+                               (f" (Fake Probability = `{prob:.2f}`)" if prob is not None else ""))
+            else:
+                results.append(f"**{name}**: Prediction = {'🟥 Phishing' if pred_adjusted == 0 else '🟩 Real'}" +
+                                   (f" (Fake Probability = `{prob:.2f}`)" if prob is not None else ""))
+        except Exception as e:
+            results.append(f"**{name}**: ⚠️ Error: {e}")
+
+    # Ensemble vote for final prediction
+    majority_vote = Counter(weighted_votes).most_common(1)[0][0]
+    final_prediction = '🟥 Fake' if majority_vote == 0 else '🟩 Real'
+    results.append(f"\n**Ensemble**: Prediction = {final_prediction}")
+    
+    return "\n".join(results), final_prediction
+
+# Run the inference with charts
+def run_infer_prediction(content_input):
     # Specify the model path for ONNX model (replace with actual model path)
     model_path = "qmodel.onnx"
     
     # Call the inference function from infer.py
-    type_pred, queue_pred, type_probs, queue_probs = run_inference(text, model_path)
+    type_pred, queue_pred, type_probs, queue_probs = run_inference(content_input, model_path)
     
+    # Generate a bar chart for the probabilities of types and queues
+    fig, ax = plt.subplots(1, 2, figsize=(12, 5))
+
+    # Plot for Type Probabilities
+    ax[0].bar([item['name'] for item in type_probs], [item['prob'] for item in type_probs])
+    ax[0].set_title('Type Probabilities')
+    ax[0].set_ylabel('Probability')
+
+    # Plot for Queue Probabilities
+    ax[1].bar([item['name'] for item in queue_probs], [item['prob'] for item in queue_probs])
+    ax[1].set_title('Queue Probabilities')
+    ax[1].set_ylabel('Probability')
+
+    st.pyplot(fig)
+
     # Return the results formatted
     result_string = f"Type Prediction: {type_pred}\nQueue Prediction: {queue_pred}\n"
     
@@ -78,12 +143,20 @@ if input_type == "Phishing Email":
             st.session_state.messages.append({"role": "user", "content": f"Title: {title_input}\n\nContent: {content_input}"})
 
         if st.session_state.form_submitted and title_input and content_input:
-            # Prediction logic using the inference function
-            result_string = run_infer_prediction(content_input)
+            # Step 1: Use fine-tuned models to predict if it's fake or real
+            result_string, fake_or_real_prediction = predict_fake_or_real(content_input)
             st.session_state.messages.append({
                 "role": "assistant",
                 "content": f"✅ Email received and classified for **Phishing Email**.\n\n**Title**: {title_input}\n\n{result_string}"
             })
+
+            # Step 2: Run inference for additional results
+            if == "🟥 Fake":
+                infer_result_string = run_infer_prediction(content_input)
+                st.session_state.messages.append({
+                    "role": "assistant",
+                    "content": f"Additional Inference Results:\n{infer_result_string}"
+                })
             st.session_state.form_submitted = False
             st.rerun()
 
@@ -102,11 +175,18 @@ else:
             st.rerun()
 
         if st.session_state.form_submitted and user_input:
-            # Prediction logic using the inference function
-            result_string = run_infer_prediction(user_input)
+            # Step 1: Use fine-tuned models to predict if it's fake or real
+            result_string, fake_or_real_prediction = predict_fake_or_real(user_input)
             st.session_state.messages.append({
                 "role": "assistant",
                 "content": f"✅ News Article received and classified for **News Article**.\n\n{result_string}"
+            })
+
+            # Step 2: Run inference for additional results
+            infer_result_string = run_infer_prediction(user_input)
+            st.session_state.messages.append({
+                "role": "assistant",
+                "content": f"Additional Inference Results:\n{infer_result_string}"
             })
             st.session_state.form_submitted = False
             st.rerun()
