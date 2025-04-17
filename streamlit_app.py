@@ -163,7 +163,7 @@ else:
         if submit_button:
             st.session_state.form_submitted = True
             st.session_state.messages.append({"role": "user", "content": user_input})
-            st.experimental_rerun()
+
 
         if st.session_state.form_submitted and user_input:
             result_string, fake_or_real_prediction, _ = predict_fake_or_real(user_input)
@@ -172,8 +172,14 @@ else:
                 "content": f"✅ News Article received and classified for **News Article**.\n\n{result_string}"
             })
             st.session_state.form_submitted = False
+            st.rerun()
+# Display messages + chart if applicable
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.write(message["content"])
 
-# Display chart if flag is set
-if st.session_state.get("show_chart") and st.session_state.get("chart_image"):
-    st.image(st.session_state.chart_image, use_column_width=True)
-    st.session_state.show_chart = False
+        # Show chart immediately after the assistant's response
+        if message["role"] == "assistant" and "inference results" in message["content"].lower():
+            if st.session_state.get("chart_image"):
+                st.image(st.session_state.chart_image, use_column_width=True)
+
