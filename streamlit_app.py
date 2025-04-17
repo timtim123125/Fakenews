@@ -155,8 +155,11 @@ if input_type == "Phishing Email":
                 # Include the chart in the assistant's message
                 st.session_state.messages.append({
                     "role": "assistant",
-                    "content": "Here are the inference results:" + st.pyplot(st.session_state.chart),
-                })                
+                    "content": "Here are the inference results:",
+                })
+
+                # Display the chart directly after the message
+                st.pyplot(st.session_state.chart)  # This will render the chart directly
 
             st.session_state.form_submitted = False
             st.rerun()
