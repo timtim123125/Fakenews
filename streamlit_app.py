@@ -42,7 +42,7 @@ fine_tuned_models = {name: joblib.load(path) for name, path in model_files.items
 # Prediction Function (Using infer.py)
 def run_infer_prediction(text):
     # Specify the model path for ONNX model (replace with actual model path)
-    model_path = "Deeplearning with Reflect/assets/qmodel.onnx"
+    model_path = "qmodel.onnx"
     
     # Call the inference function from infer.py
     type_pred, queue_pred, type_probs, queue_probs = run_inference(text, model_path)
