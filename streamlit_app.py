@@ -124,7 +124,7 @@ def run_infer_prediction(content_input):
     st.session_state.chart = fig
 
 # Create two columns for chatbot and chart
-col1, col2 = st.columns([3, 1])  # Adjust the proportions if needed
+col1, col2 = st.columns([2, 2])  # Adjust the proportions if needed
 
 # Display chat history in column 1 (chatbot)
 with col1:
@@ -144,7 +144,6 @@ if input_type == "Phishing Email":
             st.session_state.form_submitted = True
             st.session_state.messages.append({"role": "user", "content": f"Title: {title_input}\n\nContent: {content_input}"})
 
-        if st.session_state.form_submitted and title_input and content_input:
             # Step 1: Use fine-tuned models to predict if it's fake or real
             result_string, fake_or_real_prediction = predict_fake_or_real(title_input + content_input)
             st.session_state.messages.append({
@@ -166,7 +165,6 @@ if input_type == "Phishing Email":
                     st.pyplot(st.session_state.chart)
 
             st.session_state.form_submitted = False
-            st.rerun()
 
 else:
     # Handle News Article input (using form and rerun)
@@ -179,6 +177,9 @@ else:
             st.session_state.form_submitted = True
             st.session_state.messages.append({"role": "user", "content": user_input})
 
+            # Trigger rerun to update the page
+            st.experimental_rerun()
+
         if st.session_state.form_submitted and user_input:
             result_string, fake_or_real_prediction = predict_fake_or_real(user_input)
             st.session_state.messages.append({
@@ -186,4 +187,3 @@ else:
                 "content": f"✅ News Article received and classified for **News Article**.\n\n{result_string}"
             })
             st.session_state.form_submitted = False
-            st.rerun()  # You may still use rerun here if needed but avoid it in the email case
