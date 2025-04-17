@@ -158,8 +158,8 @@ if input_type == "Phishing Email":
                     "content": "Here are the inference results:",
                 })
 
-                # Display the chart directly after the message
-                st.pyplot(st.session_state.chart)  # This will render the chart directly
+                # Display the chart separately, NOT concatenated with the message content
+                st.pyplot(st.session_state.chart)  # This will render the chart independently
 
             st.session_state.form_submitted = False
             st.rerun()
