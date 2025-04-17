@@ -151,7 +151,7 @@ if input_type == "Phishing Email":
             })
 
             # Step 2: Run inference for additional results
-            if == "🟥 Fake":
+            if final_prediction == "🟥 Fake":
                 infer_result_string = run_infer_prediction(content_input)
                 st.session_state.messages.append({
                     "role": "assistant",
