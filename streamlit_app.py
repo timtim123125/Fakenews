@@ -91,6 +91,9 @@ def predict_fake_or_real(content_input):
     return "\n".join(results), final_prediction
 
 # Run the inference with charts
+import matplotlib.pyplot as plt
+import streamlit as st
+
 def run_infer_prediction(content_input):
     # Specify the model path for ONNX model (replace with actual model path)
     model_path = "qmodel.onnx"
@@ -98,6 +101,11 @@ def run_infer_prediction(content_input):
     # Call the inference function from infer.py
     type_pred, queue_pred, type_probs, queue_probs = run_inference(content_input, model_path)
     
+    # Check if type_probs and queue_probs are valid
+    if not type_probs or not queue_probs:
+        st.error("Error: The probabilities data is missing or invalid.")
+        return
+
     # Generate a bar chart for the probabilities of types and queues
     fig, ax = plt.subplots(1, 2, figsize=(12, 5))
 
@@ -105,26 +113,16 @@ def run_infer_prediction(content_input):
     ax[0].bar([item['name'] for item in type_probs], [item['prob'] for item in type_probs])
     ax[0].set_title('Type Probabilities')
     ax[0].set_ylabel('Probability')
+    ax[0].tick_params(axis='x', rotation=45)  # Rotate x-axis labels if they are long
 
     # Plot for Queue Probabilities
     ax[1].bar([item['name'] for item in queue_probs], [item['prob'] for item in queue_probs])
     ax[1].set_title('Queue Probabilities')
     ax[1].set_ylabel('Probability')
+    ax[1].tick_params(axis='x', rotation=45)  # Rotate x-axis labels if they are long
 
+    # Display the charts using Streamlit
     st.pyplot(fig)
-
-    # Return the results formatted
-    result_string = f"Type Prediction: {type_pred}\nQueue Prediction: {queue_pred}\n"
-    
-    result_string += "\nType Probabilities:\n"
-    for item in type_probs:
-        result_string += f"{item['name']}: {item['prob']}\n"
-        
-    result_string += "\nQueue Probabilities:\n"
-    for item in queue_probs:
-        result_string += f"{item['name']}: {item['prob']}\n"
-        
-    return result_string
 
 # Display chat history
 for message in st.session_state.messages:
