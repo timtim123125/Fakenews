@@ -118,10 +118,6 @@ def run_infer_prediction(content_input):
     buf.seek(0)
     return buf
 
-# Show messages
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.write(message["content"])
 
 # Phishing Email Input
 if input_type == "Phishing Email":
