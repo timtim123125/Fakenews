@@ -30,7 +30,7 @@ if "awaiting_text" not in st.session_state:
 if "form_submitted" not in st.session_state:
     st.session_state.form_submitted = False
 if "chart" not in st.session_state:
-    st.session_state.chart = None  # Initialize the chart session state
+    st.session_state.chart = None  # Initialize chart in session state to keep track of it
 
 # Load Models (if still needed for other purposes)
 model_files = {
@@ -105,8 +105,8 @@ def run_infer_prediction(content_input):
         st.error("Error: The probabilities data is missing or invalid.")
         return
 
-    # Generate a larger bar chart for the probabilities of types and queues
-    fig, ax = plt.subplots(1, 2, figsize=(18, 10))  # Increased figsize for larger chart
+    # Generate a bar chart for the probabilities of types and queues
+    fig, ax = plt.subplots(1, 2, figsize=(18, 10))  # Increased figure size for a larger chart
 
     # Plot for Type Probabilities
     ax[0].bar([item['name'] for item in type_probs], [item['prob'] for item in type_probs])
@@ -166,6 +166,7 @@ if input_type == "Phishing Email":
                     st.pyplot(st.session_state.chart)
 
             st.session_state.form_submitted = False
+            st.rerun()
 
 else:
     # Handle News Article input (using form and rerun)
