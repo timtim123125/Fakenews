@@ -160,6 +160,7 @@ if input_type == "Phishing Email":
                 st.pyplot(st.session_state.chart)
 
             st.session_state.form_submitted = False
+            st.rerun()
 
 else:
     # Handle News Article input (using form and rerun)
@@ -182,3 +183,4 @@ else:
                 "content": f"✅ News Article received and classified for **News Article**.\n\n{result_string}"
             })
             st.session_state.form_submitted = False
+            st.rerun()
