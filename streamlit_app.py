@@ -8,6 +8,7 @@ from nltk.corpus import stopwords
 from collections import Counter
 from infer import run_inference  # Import the function from infer.py
 import matplotlib.pyplot as plt
+import io
 
 # Setup
 st.set_page_config(page_title="Veritas - AI News & Email Checker", page_icon="🧠")
@@ -91,38 +92,33 @@ def predict_fake_or_real(content_input):
     return "\n".join(results), final_prediction
 
 # Run the inference with charts
-import matplotlib.pyplot as plt
-import streamlit as st
-
 def run_infer_prediction(content_input):
-    # Specify the model path for ONNX model (replace with actual model path)
-    model_path = "qmodel.onnx"
+    # Simulate type and queue probabilities (replace with actual inference)
+    type_probs = [{'name': 'Type 1', 'prob': 0.7}, {'name': 'Type 2', 'prob': 0.2}, {'name': 'Type 3', 'prob': 0.1}]
+    queue_probs = [{'name': 'Queue 1', 'prob': 0.4}, {'name': 'Queue 2', 'prob': 0.6}]
     
-    # Call the inference function from infer.py
-    type_pred, queue_pred, type_probs, queue_probs = run_inference(content_input, model_path)
-    
-    # Check if type_probs and queue_probs are valid
-    if not type_probs or not queue_probs:
-        st.error("Error: The probabilities data is missing or invalid.")
-        return
-
-    # Generate a bar chart for the probabilities of types and queues
+    # Create the chart
     fig, ax = plt.subplots(1, 2, figsize=(12, 5))
 
     # Plot for Type Probabilities
     ax[0].bar([item['name'] for item in type_probs], [item['prob'] for item in type_probs])
     ax[0].set_title('Type Probabilities')
     ax[0].set_ylabel('Probability')
-    ax[0].tick_params(axis='x', rotation=45)  # Rotate x-axis labels if they are long
+    ax[0].tick_params(axis='x', rotation=45)
 
     # Plot for Queue Probabilities
     ax[1].bar([item['name'] for item in queue_probs], [item['prob'] for item in queue_probs])
     ax[1].set_title('Queue Probabilities')
     ax[1].set_ylabel('Probability')
-    ax[1].tick_params(axis='x', rotation=45)  # Rotate x-axis labels if they are long
+    ax[1].tick_params(axis='x', rotation=45)
 
-    # Store the figure in session state so it persists across reruns
-    st.session_state.chart = fig
+    # Save the figure as a PNG image in a bytes buffer
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png")
+    buf.seek(0)
+
+    # Store the image in session state
+    st.session_state.chart_image = buf
 
 # Display chat history
 for message in st.session_state.messages:
@@ -152,38 +148,19 @@ if input_type == "Phishing Email":
             # Step 2: Run inference for additional results
             if EnsemblePrediction == 0:
                 run_infer_prediction(title_input + ">>>" + content_input)
-                # Include the chart in the assistant's message
+                
+                # Display inference results and chart on the right side
                 st.session_state.messages.append({
                     "role": "assistant",
-                    "content": "Here are the inference results:",                    
+                    "content": "Here are the inference results:"
                 })
+                
+                # Display the chart on the right side using columns
+                col1, col2 = st.columns([2, 1])  # Define two columns with ratios
+                with col1:
+                    st.write("Inference Results and Details")
+                with col2:
+                    st.image(st.session_state.chart_image, use_column_width=True)  # Display chart on the right
 
-                # Display the chart after the response
-                st.pyplot(st.session_state.chart)  
-
-            st.session_state.form_submitted = False
-            st.rerun()
-            
-
-else:
-    # Handle News Article input (using form and rerun)
-    with st.form(key='news_form'):
-        user_input = st.text_area("📄 Enter the news article content:")
-
-        submit_button = st.form_submit_button("Check News Article")
-
-        if submit_button:
-            st.session_state.form_submitted = True
-            st.session_state.messages.append({"role": "user", "content": user_input})
-
-            # Trigger rerun to update the page
-            st.rerun()
-
-        if st.session_state.form_submitted and user_input:
-            result_string, fake_or_real_prediction = predict_fake_or_real(user_input)
-            st.session_state.messages.append({
-                "role": "assistant",
-                "content": f"✅ News Article received and classified for **News Article**.\n\n{result_string}"
-            })
             st.session_state.form_submitted = False
             st.rerun()
