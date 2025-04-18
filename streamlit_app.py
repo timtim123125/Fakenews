@@ -82,11 +82,11 @@ def predict_fake_or_real(content_input):
             phishing_label = '🟥 Phishing' if pred_adjusted == 0 else '🟩 Real'
             label_to_use = label if input_type == "News Article" else phishing_label
             if input_type == "Phishing Email":
-            results.append(f"**{name}**: Prediction = {label_to_use}" +
-                           (f" (Fake Probability = `{prob:.2f}`)" if prob is not None else ""))
+                results.append(f"**{name}**: Prediction = {label_to_use}" +
+                               (f" (Fake Probability = `{prob:.2f}`)" if prob is not None else ""))
             else:
-            results.append(f"**{name}**: Prediction = {label_to_use}" +
-                           (f" (Real Probability = `{prob:.2f}`)" if prob is not None else ""))
+                results.append(f"**{name}**: Prediction = {label_to_use}" +
+                               (f" (Real Probability = `{prob:.2f}`)" if prob is not None else ""))
         except Exception as e:
             results.append(f"**{name}**: ⚠️ Error: {e}")
 
