@@ -141,7 +141,7 @@ if input_type == "Phishing Email":
                 "content": f"✅ Email received and classified for **Phishing Email**.\n\n**Title**: {title_input}\n\n{result_string}"
             })
 
-            if ensemble == 0:
+            if ensemble == 1:
                 chart_buf = run_infer_prediction(title_input + ">>>" + content_input)
                 if chart_buf:
                     st.session_state.chart_image = chart_buf
